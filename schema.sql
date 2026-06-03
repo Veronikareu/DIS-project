@@ -14,9 +14,10 @@ CREATE TABLE cve (
     impact_integrity VARCHAR
 );
 
-CREATE TABLE vendors (
-    id VARCHAR PRIMARY KEY,
-    vendor VARCHAR
+CREATE TABLE cve_vendor (
+    cve_id VARCHAR REFERENCES cve(id),
+    vendor VARCHAR,
+    PRIMARY KEY (cve_id, vendor)
 );
 
 CREATE TABLE products (
