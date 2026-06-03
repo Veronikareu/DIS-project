@@ -21,7 +21,8 @@ CREATE TABLE vendors (
 
 CREATE TABLE products (
     cve_id VARCHAR REFERENCES cve(id),
-    vulnerable_product VARCHAR
+    vulnerable_product VARCHAR,
+    PRIMARY KEY (cve_id, vulnerable_product)
 );
 
 CREATE TABLE vendor_product (
