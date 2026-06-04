@@ -54,7 +54,17 @@
                 {% for cve in cves %}
                 <tr>
                     <td><a href="/cve/{{ cve[0] }}">{{ cve[0] }}</a></td>
-                    <td>{{ cve[2] }}</td>
+                    <td>
+                        {% if cve[2] >= 9 %}
+                            <span class="badge critical">{{ cve[2] }}</span>
+                        {% elif cve[2] >= 7 %}
+                            <span class="badge high">{{ cve[2] }}</span>
+                        {% elif cve[2] >= 4 %}
+                            <span class="badge medium">{{ cve[2] }}</span>
+                        {% else %}
+                            <span class="badge low">{{ cve[2] }}</span>
+                        {% endif %}
+                    </td>
                     <td>{{ cve[1] }}</td>
                     <td>{{ cve[3] }}</td>
                     <td>{{ cve[4] }}</td>
