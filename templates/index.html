@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>CVE Explorer</title>
+    <link rel="stylesheet" href="../static/style.css">
+</head>
+<body>
+
+    <header>
+        <h1>CVE Explorer</h1>
+    </header>
+
+    <main>
+        <form action="/search" method="GET">
+            <input type="text" name="q" placeholder="Search...">
+            
+            <select name="vendor">
+                <option value="">All vendors</option>
+                {% for vendor in vendors %}
+                <option value="{{ vendor[0] }}">{{ vendor[0] }}</option>
+                {% endfor %}
+            </select>
+
+            <select name="year">
+                <option value="">All years</option>
+                {% for year in years %}
+                <option value="{{ year[0] }}">{{ year[0] }}</option>
+                {% endfor %}
+            </select>
+
+            <select name="severity">
+                <option value="">All severities</option>
+                <option value="critical">Critical (9-10)</option>
+                <option value="high">High (7-8.9)</option>
+                <option value="medium">Medium (4-6.9)</option>
+                <option value="low">Low (0-3.9)</option>
+            </select>
+
+            <button type="submit">Search</button>
+        </form>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>CVE ID</th>
+                    <th>CVSS</th>
+                    <th>Published</th>
+                    <th>Vendor</th>
+                    <th>Summary</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for cve in cves %}
+                <tr>
+                    <td><a href="/cve/{{ cve[0] }}">{{ cve[0] }}</a></td>
+                    <td>
+                        {% if cve[2] >= 9 %}
+                            <span class="badge critical">{{ cve[2] }}</span>
+                        {% elif cve[2] >= 7 %}
+                            <span class="badge high">{{ cve[2] }}</span>
+                        {% elif cve[2] >= 4 %}
+                            <span class="badge medium">{{ cve[2] }}</span>
+                        {% else %}
+                            <span class="badge low">{{ cve[2] }}</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ cve[1] }}</td>
+                    <td>{{ cve[3] }}</td>
+                    <td>{{ cve[4] }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </main>
+
+</body>
+</html>
