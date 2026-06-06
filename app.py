@@ -3,7 +3,7 @@ import os
 import getpass
 import psycopg2
 import psycopg2.extras
-from flask import Flask, render_template, request, g
+from flask import Flask, render_template, request, g, redirect
 from dotenv import load_dotenv
  
 load_dotenv()
@@ -43,7 +43,7 @@ SEVERITY_RANGES = {
 }
 
 
-@app.route("/")
+@app.route("/search")
 def index():
     db = get_db()
  
@@ -127,32 +127,91 @@ def index():
 def cve_detail(cve_id):
     if not is_valid_cve_id(cve_id):
         return "Ugyldigt CVE-ID format", 400
- 
+
     db = get_db()
     with db.cursor(cursor_factory=psycopg2.extras.DictCursor) as cur:
- 
+
         cur.execute("SELECT * FROM cve WHERE id = %s;", (cve_id,))
         cve = cur.fetchone()
         if cve is None:
             return "CVE ikke fundet", 404
- 
+
         cur.execute("""
             SELECT vendor FROM cve_vendor
             WHERE cve_id = %s ORDER BY vendor;
         """, (cve_id,))
         vendors = cur.fetchall()
- 
+
         cur.execute("""
             SELECT vulnerable_product FROM products
             WHERE cve_id = %s ORDER BY vulnerable_product;
         """, (cve_id,))
         products = cur.fetchall()
- 
+
+        cur.execute("SELECT id, folder FROM favorites WHERE cve_id = %s;", (cve_id,))
+        favorite = cur.fetchone()
+
+        cur.execute("SELECT DISTINCT folder FROM favorites ORDER BY folder;")
+        folders = [row[0] for row in cur.fetchall()]
+
     return render_template("cve_detail.html",
         cve=cve,
         vendors=vendors,
         products=products,
+        favorite=favorite,
+        folders=folders,
     )
+
+@app.route("/profile")
+def profile():
+    db = get_db()
+    with db.cursor(cursor_factory=psycopg2.extras.DictCursor) as cur:
+        cur.execute("""
+            SELECT f.id, f.cve_id, f.folder, f.saved_at, c.cvss, c.summary
+            FROM favorites f
+            JOIN cve c ON f.cve_id = c.id
+            ORDER BY f.folder, f.saved_at DESC;
+        """)
+        favorites = cur.fetchall()
+ 
+        cur.execute("SELECT DISTINCT folder FROM favorites ORDER BY folder;")
+        folders = [row["folder"] for row in cur.fetchall()]
+ 
+    return render_template("profile.html", favorites=favorites, folders=folders)
+ 
+ 
+@app.route("/favorite/add/<cve_id>", methods=["POST"])
+def add_favorite(cve_id):
+    if not is_valid_cve_id(cve_id):
+        return "Ugyldigt CVE-ID", 400
+    selected = request.form.get("folder", "").strip()
+    new_folder = request.form.get("new_folder", "").strip()
+    if selected == "__new__" or not selected:
+        folder = new_folder if new_folder else "Default"
+    else:
+        folder = selected
+    db = get_db()
+    with db.cursor() as cur:
+        cur.execute("""
+            INSERT INTO favorites (cve_id, folder)
+            VALUES (%s, %s)
+            ON CONFLICT DO NOTHING;
+        """, (cve_id, folder))
+    db.commit()
+    return redirect(request.referrer or "/")
+ 
+ 
+@app.route("/favorite/remove/<int:fav_id>", methods=["POST"])
+def remove_favorite(fav_id):
+    db = get_db()
+    with db.cursor() as cur:
+        cur.execute("DELETE FROM favorites WHERE id = %s;", (fav_id,))
+    db.commit()
+    return redirect(request.referrer or "/profile")
+ 
+@app.route("/")
+def landing():
+    return render_template("landing.html")
 
 if __name__ == "__main__":
     app.run(debug=True)

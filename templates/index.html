@@ -2,39 +2,232 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>CVE Explorer</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <title>CVE Explorer — Search</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Outfit:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background: #0d0f14;
+            min-height: 100vh;
+            font-family: 'Outfit', sans-serif;
+            color: #e8e6e0;
+            padding: 0;
+        }
+
+        .grid-bg {
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+            background-size: 48px 48px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1.4rem 2.5rem;
+            border-bottom: 0.5px solid rgba(255,255,255,0.07);
+            position: relative;
+            z-index: 10;
+        }
+
+        .logo {
+            font-family: 'DM Mono', monospace;
+            font-size: 13px;
+            letter-spacing: 0.15em;
+            color: rgba(255,255,255,0.5);
+            text-transform: uppercase;
+            text-decoration: none;
+        }
+
+        .logo span { color: #e3503c; }
+
+        .nav-right a {
+            font-size: 13px;
+            color: rgba(255,255,255,0.4);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .nav-right a:hover { color: rgba(255,255,255,0.85); }
+
+        main {
+            position: relative;
+            z-index: 2;
+            padding: 2.5rem;
+        }
+
+        .search-bar {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 2rem;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 10px 16px;
+            background: rgba(255,255,255,0.05);
+            border: 0.5px solid rgba(255,255,255,0.12);
+            border-radius: 8px;
+            font-size: 14px;
+            color: #e8e6e0;
+            font-family: 'Outfit', sans-serif;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        input[type="text"]::placeholder { color: rgba(255,255,255,0.25); }
+        input[type="text"]:focus { border-color: rgba(255,255,255,0.3); }
+
+        select {
+            padding: 10px 14px;
+            background: rgba(255,255,255,0.05);
+            border: 0.5px solid rgba(255,255,255,0.12);
+            border-radius: 8px;
+            font-size: 13px;
+            color: rgba(232,230,224,0.7);
+            font-family: 'Outfit', sans-serif;
+            outline: none;
+            cursor: pointer;
+            transition: border-color 0.2s;
+        }
+
+        select:focus { border-color: rgba(255,255,255,0.3); }
+
+        select option { background: #1a1d26; color: #e8e6e0; }
+
+        button[type="submit"] {
+            padding: 10px 22px;
+            background: #e3503c;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 500;
+            color: #fff;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        button[type="submit"]:hover { background: #c9432f; }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        th {
+            text-align: left;
+            font-size: 11px;
+            font-weight: 500;
+            color: rgba(255,255,255,0.25);
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            padding: 8px 10px;
+            border-bottom: 0.5px solid rgba(255,255,255,0.07);
+        }
+
+        td {
+            padding: 12px 10px;
+            border-bottom: 0.5px solid rgba(255,255,255,0.05);
+            max-width: 320px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            color: rgba(232,230,224,0.7);
+        }
+
+        tr:hover td { background: rgba(255,255,255,0.03); }
+
+        a {
+            color: rgba(232,230,224,0.85);
+            text-decoration: none;
+            font-family: 'DM Mono', monospace;
+            font-size: 12px;
+        }
+
+        a:hover { color: #e3503c; }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-family: 'DM Mono', monospace;
+            font-weight: 500;
+            letter-spacing: 0.03em;
+        }
+
+        .critical { background: rgba(163,45,45,0.25); color: #f09595; border: 0.5px solid rgba(163,45,45,0.3); }
+        .high     { background: rgba(133,79,11,0.25);  color: #fac775; border: 0.5px solid rgba(133,79,11,0.3); }
+        .medium   { background: rgba(59,109,17,0.2);   color: #97c459; border: 0.5px solid rgba(59,109,17,0.3); }
+        .low      { background: rgba(24,95,165,0.2);   color: #85b7eb; border: 0.5px solid rgba(24,95,165,0.3); }
+
+        /* Vendor dropdown */
+        #vendor-dropdown {
+            background: #1a1d26;
+            border: 0.5px solid rgba(255,255,255,0.12);
+            border-radius: 8px;
+        }
+
+        #vendor-dropdown li {
+            color: rgba(232,230,224,0.7);
+            font-size: 13px;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        #vendor-dropdown li:hover { background: rgba(255,255,255,0.06) !important; }
+    </style>
 </head>
 <body>
 
-    <header>
-        <h1>CVE Explorer</h1>
-    </header>
+    <div class="grid-bg"></div>
+
+    <nav>
+        <a href="/" class="logo"><span>//</span> CVE Explorer</a>
+        <div class="nav-right">
+            <a href="/profile">★ My Favorites</a>
+        </div>
+    </nav>
 
     <main>
-        <form action="/" method="GET">
-            <input type="text" name="q" placeholder="Search...">
-            
-            <select name="vendor">
-                <option value="">All vendors</option>
-                {% for vendor in vendors %}
-                <option value="{{ vendor[0] }}">{{ vendor[0] }}</option>
-                {% endfor %}
-            </select>
+        <form action="/search" method="GET" class="search-bar">
+            <input type="text" name="q" placeholder="Search CVE ID or keyword..." value="{{ request.args.get('q', '') }}">
+
+            <div style="position: relative;">
+                <input type="text" id="vendor-search" placeholder="Search vendor..." autocomplete="off"
+                    style="width: 180px; flex: none;"
+                    oninput="filterVendors(this.value)">
+                <input type="hidden" name="vendor" id="vendor-value" value="{{ request.args.get('vendor', '') }}">
+                <ul id="vendor-dropdown" style="display:none; position:absolute; z-index:999; max-height:200px; overflow-y:auto; width:200px; margin:0; padding:0; list-style:none;">
+                    <li onclick="selectVendor('', 'All vendors')" style="padding:8px 12px; cursor:pointer;">All vendors</li>
+                    {% for vendor in vendors %}
+                    <li onclick="selectVendor('{{ vendor[0] }}', '{{ vendor[0] }}')" style="padding:8px 12px; cursor:pointer;">{{ vendor[0] }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
 
             <select name="year">
                 <option value="">All years</option>
                 {% for year in years %}
-                <option value="{{ year[0] }}">{{ year[0] }}</option>
+                <option value="{{ year[0] }}" {% if request.args.get('year') == year[0]|string %}selected{% endif %}>{{ year[0] }}</option>
                 {% endfor %}
             </select>
 
             <select name="severity">
                 <option value="">All severities</option>
-                <option value="critical">Critical (9-10)</option>
-                <option value="high">High (7-8.9)</option>
-                <option value="medium">Medium (4-6.9)</option>
-                <option value="low">Low (0-3.9)</option>
+                <option value="critical" {% if request.args.get('severity') == 'critical' %}selected{% endif %}>Critical (9–10)</option>
+                <option value="high"     {% if request.args.get('severity') == 'high' %}selected{% endif %}>High (7–8.9)</option>
+                <option value="medium"   {% if request.args.get('severity') == 'medium' %}selected{% endif %}>Medium (4–6.9)</option>
+                <option value="low"      {% if request.args.get('severity') == 'low' %}selected{% endif %}>Low (0–3.9)</option>
             </select>
 
             <button type="submit">Search</button>
@@ -73,6 +266,39 @@
             </tbody>
         </table>
     </main>
+
+    <script>
+        const vendorSearch = document.getElementById('vendor-search');
+        const vendorValue = document.getElementById('vendor-value');
+        const dropdown = document.getElementById('vendor-dropdown');
+
+        const current = vendorValue.value;
+        if (current) vendorSearch.value = current;
+
+        vendorSearch.addEventListener('focus', () => dropdown.style.display = 'block');
+        document.addEventListener('click', e => {
+            if (!e.target.closest('#vendor-search') && !e.target.closest('#vendor-dropdown')) {
+                dropdown.style.display = 'none';
+            }
+        });
+
+        function filterVendors(query) {
+            dropdown.style.display = 'block';
+            const items = dropdown.querySelectorAll('li');
+            items.forEach(li => {
+                li.style.display = li.textContent.toLowerCase().includes(query.toLowerCase()) ? '' : 'none';
+            });
+        }
+
+        function selectVendor(value, label) {
+            vendorValue.value = value;
+            vendorSearch.value = label === 'All vendors' ? '' : label;
+            dropdown.style.display = 'none';
+        }
+
+        dropdown.addEventListener('mouseover', e => { if (e.target.tagName === 'LI') e.target.style.background = 'rgba(255,255,255,0.06)'; });
+        dropdown.addEventListener('mouseout',  e => { if (e.target.tagName === 'LI') e.target.style.background = ''; });
+    </script>
 
 </body>
 </html>

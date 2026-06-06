@@ -31,3 +31,10 @@ CREATE TABLE vendor_product (
     vendor VARCHAR,
     product VARCHAR
 );
+
+CREATE TABLE favorites (
+    id SERIAL PRIMARY KEY,
+    cve_id VARCHAR REFERENCES cve(id),
+    folder VARCHAR DEFAULT 'Default',
+    saved_at TIMESTAMP DEFAULT NOW()
+);

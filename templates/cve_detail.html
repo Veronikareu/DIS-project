@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ cve['id'] }} — CVE Explorer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Outfit:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background: #0d0f14;
+            min-height: 100vh;
+            font-family: 'Outfit', sans-serif;
+            color: #e8e6e0;
+        }
+
+        .grid-bg {
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+            background-size: 48px 48px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1.4rem 2.5rem;
+            border-bottom: 0.5px solid rgba(255,255,255,0.07);
+            position: relative;
+            z-index: 10;
+        }
+
+        .logo {
+            font-family: 'DM Mono', monospace;
+            font-size: 13px;
+            letter-spacing: 0.15em;
+            color: rgba(255,255,255,0.5);
+            text-transform: uppercase;
+            text-decoration: none;
+        }
+
+        .logo span { color: #e3503c; }
+
+        .nav-right {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .nav-right a {
+            font-size: 13px;
+            color: rgba(255,255,255,0.4);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .nav-right a:hover { color: rgba(255,255,255,0.85); }
+
+        main {
+            position: relative;
+            z-index: 2;
+            padding: 2.5rem;
+            max-width: 960px;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-bottom: 2rem;
+            font-size: 13px;
+            color: rgba(255,255,255,0.3);
+            text-decoration: none;
+            font-family: 'Outfit', sans-serif;
+            transition: color 0.2s;
+        }
+
+        .back-link:hover { color: rgba(255,255,255,0.7); }
+
+        .cve-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .cve-title {
+            font-family: 'DM Mono', monospace;
+            font-size: 28px;
+            color: #f0ede6;
+            margin-bottom: 0.6rem;
+        }
+
+        .cve-meta {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .cve-meta span {
+            font-size: 13px;
+            color: rgba(232,230,224,0.35);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-family: 'DM Mono', monospace;
+            font-weight: 500;
+            letter-spacing: 0.03em;
+        }
+
+        .critical { background: rgba(163,45,45,0.25); color: #f09595; border: 0.5px solid rgba(163,45,45,0.3); }
+        .high     { background: rgba(133,79,11,0.25);  color: #fac775; border: 0.5px solid rgba(133,79,11,0.3); }
+        .medium   { background: rgba(59,109,17,0.2);   color: #97c459; border: 0.5px solid rgba(59,109,17,0.3); }
+        .low      { background: rgba(24,95,165,0.2);   color: #85b7eb; border: 0.5px solid rgba(24,95,165,0.3); }
+
+        .divider {
+            border: none;
+            border-top: 0.5px solid rgba(255,255,255,0.07);
+            margin: 1.5rem 0;
+        }
+
+        .section { margin-bottom: 1.5rem; }
+
+        .section-label {
+            font-size: 11px;
+            font-weight: 500;
+            color: rgba(255,255,255,0.25);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 0.5rem;
+        }
+
+        .section-value {
+            font-size: 14px;
+            color: rgba(232,230,224,0.7);
+            line-height: 1.7;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.2rem;
+        }
+
+        .tag-list { display: flex; flex-wrap: wrap; gap: 6px; }
+
+        .tag {
+            background: rgba(255,255,255,0.05);
+            border: 0.5px solid rgba(255,255,255,0.1);
+            border-radius: 4px;
+            padding: 3px 10px;
+            font-size: 12px;
+            color: rgba(232,230,224,0.6);
+            font-family: 'DM Mono', monospace;
+        }
+
+        /* Favorite box */
+        .favorite-box {
+            background: rgba(255,255,255,0.04);
+            border: 0.5px solid rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 1.2rem;
+            min-width: 240px;
+        }
+
+        .favorite-box .section-label { margin-bottom: 0.8rem; }
+
+        .favorite-box input[type="text"] {
+            width: 100%;
+            padding: 8px 12px;
+            background: rgba(255,255,255,0.05);
+            border: 0.5px solid rgba(255,255,255,0.12);
+            border-radius: 6px;
+            font-size: 13px;
+            color: #e8e6e0;
+            font-family: 'Outfit', sans-serif;
+            outline: none;
+            margin-bottom: 8px;
+        }
+
+        .favorite-box input[type="text"]::placeholder { color: rgba(255,255,255,0.2); }
+
+        .favorite-box select {
+            width: 100%;
+            padding: 8px 12px;
+            background: rgba(255,255,255,0.05);
+            border: 0.5px solid rgba(255,255,255,0.12);
+            border-radius: 6px;
+            font-size: 13px;
+            color: rgba(232,230,224,0.7);
+            font-family: 'Outfit', sans-serif;
+            outline: none;
+            margin-bottom: 8px;
+            cursor: pointer;
+        }
+
+        .favorite-box select option { background: #1a1d26; }
+
+        .btn-save {
+            width: 100%;
+            padding: 9px;
+            background: #e3503c;
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 500;
+            color: #fff;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-save:hover { background: #c9432f; }
+
+        .already-saved {
+            font-size: 13px;
+            color: rgba(232,230,224,0.5);
+            margin-bottom: 8px;
+        }
+
+        .already-saved strong { color: #f0ede6; }
+
+        .btn-remove {
+            width: 100%;
+            padding: 9px;
+            background: transparent;
+            border: 0.5px solid rgba(163,45,45,0.4);
+            border-radius: 6px;
+            font-size: 13px;
+            font-family: 'Outfit', sans-serif;
+            color: #f09595;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-remove:hover { background: rgba(163,45,45,0.15); }
+    </style>
+</head>
+<body>
+
+    <div class="grid-bg"></div>
+
+    <nav>
+        <a href="/" class="logo"><span>//</span> CVE Explorer</a>
+        <div class="nav-right">
+            <a href="/search">Search</a>
+            <a href="/profile">★ My Favorites</a>
+        </div>
+    </nav>
+
+    <main>
+        <a href="/search" class="back-link">← Back to search</a>
+
+        <div class="cve-header">
+            <div>
+                <div class="cve-title">{{ cve['id'] }}</div>
+                <div class="cve-meta">
+                    {% if cve['pub_date'] %}<span>Published {{ cve['pub_date'] }}</span>{% endif %}
+                    {% if cve['mod_date'] %}<span>Modified {{ cve['mod_date'] }}</span>{% endif %}
+                    {% if cve['cvss'] is not none %}
+                        {% if cve['cvss'] >= 9 %}
+                            <span class="badge critical">CVSS {{ cve['cvss'] }}</span>
+                        {% elif cve['cvss'] >= 7 %}
+                            <span class="badge high">CVSS {{ cve['cvss'] }}</span>
+                        {% elif cve['cvss'] >= 4 %}
+                            <span class="badge medium">CVSS {{ cve['cvss'] }}</span>
+                        {% else %}
+                            <span class="badge low">CVSS {{ cve['cvss'] }}</span>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="favorite-box">
+                <div class="section-label">Save to favorites</div>
+                {% if favorite %}
+                    <div class="already-saved">Saved in <strong>{{ favorite['folder'] }}</strong></div>
+                    <form action="/favorite/remove/{{ favorite['id'] }}" method="POST">
+                        <button class="btn-remove" type="submit">Remove from favorites</button>
+                    </form>
+                {% else %}
+                    <form action="/favorite/add/{{ cve['id'] }}" method="POST">
+                        {% if folders %}
+                            <select name="folder" id="folder-select">
+                                {% for f in folders %}
+                                    <option value="{{ f }}">📁 {{ f }}</option>
+                                {% endfor %}
+                                <option value="__new__">+ New folder...</option>
+                            </select>
+                            <input type="text" name="new_folder" id="new-folder-input"
+                                placeholder="New folder name..." style="display:none;">
+                        {% else %}
+                            <input type="text" name="new_folder" id="new-folder-input"
+                                placeholder="Folder name (e.g. Critical)">
+                        {% endif %}
+                        <button class="btn-save" type="submit">★ Save</button>
+                    </form>
+                    <script>
+                        const sel = document.getElementById('folder-select');
+                        const newInput = document.getElementById('new-folder-input');
+                        if (sel) {
+                            sel.addEventListener('change', () => {
+                                newInput.style.display = sel.value === '__new__' ? 'block' : 'none';
+                            });
+                        }
+                    </script>
+                {% endif %}
+            </div>
+        </div>
+
+        <hr class="divider">
+
+        <div class="section">
+            <div class="section-label">Summary</div>
+            <div class="section-value">{{ cve['summary'] or '—' }}</div>
+        </div>
+
+        <hr class="divider">
+
+        <div class="grid-2">
+            <div class="section">
+                <div class="section-label">CWE</div>
+                <div class="section-value">
+                    {% if cve['cwe_code'] %}
+                        {{ cve['cwe_code'] }}{% if cve['cwe_name'] %} — {{ cve['cwe_name'] }}{% endif %}
+                    {% else %}—{% endif %}
+                </div>
+            </div>
+            <div class="section">
+                <div class="section-label">Access Vector</div>
+                <div class="section-value">{{ cve['access_vector'] or '—' }}</div>
+            </div>
+            <div class="section">
+                <div class="section-label">Access Complexity</div>
+                <div class="section-value">{{ cve['access_complexity'] or '—' }}</div>
+            </div>
+            <div class="section">
+                <div class="section-label">Authentication</div>
+                <div class="section-value">{{ cve['access_authentication'] or '—' }}</div>
+            </div>
+            <div class="section">
+                <div class="section-label">Impact — Confidentiality</div>
+                <div class="section-value">{{ cve['impact_confidentiality'] or '—' }}</div>
+            </div>
+            <div class="section">
+                <div class="section-label">Impact — Integrity</div>
+                <div class="section-value">{{ cve['impact_integrity'] or '—' }}</div>
+            </div>
+            <div class="section">
+                <div class="section-label">Impact — Availability</div>
+                <div class="section-value">{{ cve['impact_availability'] or '—' }}</div>
+            </div>
+        </div>
+
+        <hr class="divider">
+
+        <div class="section">
+            <div class="section-label">Vendors ({{ vendors | length }})</div>
+            <div class="tag-list">
+                {% for v in vendors %}
+                    <span class="tag">{{ v['vendor'] }}</span>
+                {% else %}
+                    <span style="color:rgba(255,255,255,0.2); font-size:13px;">None listed</span>
+                {% endfor %}
+            </div>
+        </div>
+
+        <hr class="divider">
+
+        <div class="section">
+            <div class="section-label">Vulnerable Products ({{ products | length }})</div>
+            <div class="tag-list">
+                {% for p in products %}
+                    <span class="tag">{{ p['vulnerable_product'] }}</span>
+                {% else %}
+                    <span style="color:rgba(255,255,255,0.2); font-size:13px;">None listed</span>
+                {% endfor %}
+            </div>
+        </div>
+
+    </main>
+
+</body>
+</html>
