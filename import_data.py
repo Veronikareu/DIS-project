@@ -150,12 +150,12 @@ def import_cve_vendor(conn, df: pd.DataFrame):
  
     with conn.cursor() as cur:
         execute_values(cur, """
-            INSERT INTO vendors (id, vendor)
+            INSERT INTO cve_vendor (cve_id, vendor)
             VALUES %s
-            ON CONFLICT (id) DO NOTHING;
+            ON CONFLICT (cve_id, vendor) DO NOTHING;
         """, rows)
     conn.commit()
-    print(f"  Inserted {len(rows):,} vendors.")
+    print(f"  Inserted {len(rows):,} cve_vendors rows.")
 
 
 def import_products(conn, df: pd.DataFrame):
