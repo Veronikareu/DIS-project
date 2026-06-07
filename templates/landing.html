@@ -72,22 +72,6 @@
 
         .logo span { color: #e3503c; }
 
-        .nav-links {
-            display: flex;
-            gap: 2rem;
-            align-items: center;
-        }
-
-        .nav-links a {
-            font-size: 13px;
-            color: rgba(255,255,255,0.4);
-            text-decoration: none;
-            letter-spacing: 0.02em;
-            transition: color 0.2s;
-        }
-
-        .nav-links a:hover { color: rgba(255,255,255,0.85); }
-
         .nav-btn {
             font-size: 12px;
             color: #e8e6e0;
@@ -270,11 +254,7 @@
 
     <nav>
         <div class="logo"><span>//</span> CVE Explorer</div>
-        <div class="nav-links">
-            <a href="/search">Search</a>
-            <a href="/profile">My Favorites</a>
-            <a href="/search" class="nav-btn">Get started →</a>
-        </div>
+        <a href="/login" class="nav-btn">Sign in →</a>
     </nav>
 
     <div class="hero">
@@ -282,7 +262,7 @@
         <h1>Explore every<br><em>known threat.</em></h1>
         <p class="subtitle">Search, filter and track CVE vulnerabilities across 89,000+ entries. Built for security researchers and developers who need answers fast.</p>
         <div class="actions">
-            <a href="/search" class="btn-primary">Search CVEs →</a>
+            <a href="/login" class="btn-primary">Sign in →</a>
         </div>
     </div>
 

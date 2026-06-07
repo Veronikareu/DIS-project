@@ -108,6 +108,37 @@ a:hover {
     font-weight: 500;
 }
 
+.login-container {
+    max-width: 400px;
+    margin: 100px auto;
+    padding: 2rem;
+    background: var(--card-bg, #1e1e2e);
+    border-radius: 8px;
+}
+.login-container input {
+    display: block;
+    width: 100%;
+    margin: 0.5rem 0 1rem;
+    padding: 0.6rem;
+    border-radius: 4px;
+    border: 1px solid #444;
+    background: #2a2a3e;
+    color: inherit;
+}
+.login-container button {
+    width: 100%;
+    padding: 0.7rem;
+    background: #5865f2;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+.error-msg {
+    color: #ff6b6b;
+    margin-bottom: 1rem;
+}
+
 .critical { background: #FCEBEB; color: #A32D2D; }
 .high { background: #FAEEDA; color: #854F0B; }
 .medium { background: #EAF3DE; color: #3B6D11; }

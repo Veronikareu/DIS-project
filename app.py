@@ -3,12 +3,15 @@ import os
 import getpass
 import psycopg2
 import psycopg2.extras
-from flask import Flask, render_template, request, g, redirect
+from flask import Flask, render_template, request, g, redirect, session, url_for, flash
 from dotenv import load_dotenv
+from werkzeug.security import generate_password_hash, check_password_hash
+import functools
  
 load_dotenv()
  
 app = Flask(__name__)
+app.secret_key = os.getenv("SECRET_KEY", "change-in-production")
 
 DB_CONFIG = {
     "host":     os.getenv("DB_HOST",     "localhost"),
@@ -42,8 +45,17 @@ SEVERITY_RANGES = {
     "low":      (0.0, 3.9),
 }
 
+def login_required(f):
+    @functools.wraps(f)
+    def decorated(*args, **kwargs):
+        if "user_id" not in session:
+            return redirect(url_for("login"))
+        return f(*args, **kwargs)
+    return decorated
+
 
 @app.route("/search")
+@login_required
 def index():
     db = get_db()
  
@@ -124,6 +136,7 @@ def index():
     )
 
 @app.route("/cve/<cve_id>")
+@login_required
 def cve_detail(cve_id):
     if not is_valid_cve_id(cve_id):
         return "Ugyldigt CVE-ID format", 400
@@ -163,6 +176,7 @@ def cve_detail(cve_id):
     )
 
 @app.route("/profile")
+@login_required
 def profile():
     db = get_db()
     with db.cursor(cursor_factory=psycopg2.extras.DictCursor) as cur:
@@ -181,6 +195,7 @@ def profile():
  
  
 @app.route("/favorite/add/<cve_id>", methods=["POST"])
+@login_required
 def add_favorite(cve_id):
     if not is_valid_cve_id(cve_id):
         return "Ugyldigt CVE-ID", 400
@@ -202,6 +217,7 @@ def add_favorite(cve_id):
  
  
 @app.route("/favorite/remove/<int:fav_id>", methods=["POST"])
+@login_required
 def remove_favorite(fav_id):
     db = get_db()
     with db.cursor() as cur:
@@ -211,7 +227,55 @@ def remove_favorite(fav_id):
  
 @app.route("/")
 def landing():
+    if "user_id" in session:
+        return redirect(url_for("index"))
     return render_template("landing.html")
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if "user_id" in session:
+        return redirect(url_for("index"))
+    if request.method == "POST":
+        username = request.form["username"].strip()
+        password = request.form["password"]
+        db = get_db()
+        with db.cursor(cursor_factory=psycopg2.extras.DictCursor) as cur:
+            cur.execute("SELECT * FROM users WHERE username = %s", (username,))
+            user = cur.fetchone()
+        if user and check_password_hash(user["password_hash"], password):
+            session["user_id"] = user["id"]
+            session["username"] = user["username"]
+            return redirect(url_for("index"))
+        flash("Incorrect username or password.")
+    return render_template("login.html", mode="login")
+
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    if "user_id" in session:
+        return redirect(url_for("index"))
+    if request.method == "POST":
+        username = request.form["username"].strip()
+        password = request.form["password"]
+        db = get_db()
+        with db.cursor() as cur:
+            try:
+                cur.execute(
+                    "INSERT INTO users (username, password_hash) VALUES (%s, %s)",
+                    (username, generate_password_hash(password))
+                )
+                db.commit()
+                flash("Account created — sign in below.")
+                return redirect(url_for("login"))
+            except psycopg2.errors.UniqueViolation:
+                db.rollback()
+                flash("That username is already taken.")
+    return render_template("login.html", mode="register")
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect(url_for("landing"))
 
 if __name__ == "__main__":
     app.run(debug=True)
+    
