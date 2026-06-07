@@ -2,8 +2,6 @@
 
 A web application for searching and exploring Common Vulnerabilities and Exposures (CVE) data.
 
-The E/R diagram is included separately as `er_diagram.pdf` in the repository.
-
 ---
 
 ## Setup & Installation
