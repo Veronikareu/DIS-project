@@ -80,30 +80,3 @@ CVE_PATTERN = re.compile(r"^CVE-\d{4}-\d{4,}$", re.IGNORECASE)
 ```
 
 On the search page this distinguishes CVE ID lookups from free-text summary searches. During import it is used to skip malformed rows.
-
----
-
-## Project Structure
-
-```
-.
-├── app.py              # Flask application and routes
-├── import_data.py      # Data import script (CSV → PostgreSQL)
-├── schema.sql          # Database schema (DDL)
-├── db.py               # Database helpers
-├── data/               # CSV data files (included in repo)
-│   ├── cve.csv
-│   ├── vendors.csv
-│   ├── products.csv
-│   └── vendor_product.csv
-├── templates/
-│   ├── landing.html
-│   ├── login.html
-│   ├── index.html
-│   ├── cve_detail.html
-│   └── profile.html
-├── static/
-│   └── style.css
-├── er_diagram.pdf      # E/R diagram
-└── README.md
-```
