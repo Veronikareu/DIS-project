@@ -191,6 +191,20 @@
         }
 
         #vendor-dropdown li:hover { background: rgba(255,255,255,0.06) !important; }
+
+        #product-dropdown {
+            background: #1a1d26;
+            border: 0.5px solid rgba(255,255,255,0.12);
+            border-radius: 8px;
+        }
+
+        #product-dropdown li {
+            color: rgba(232,230,224,0.7);
+            font-size: 13px;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        #product-dropdown li:hover { background: rgba(255,255,255,0.06) !important; }
     </style>
 </head>
 <body>
@@ -218,6 +232,19 @@
                     <li onclick="selectVendor('', 'All vendors')" style="padding:8px 12px; cursor:pointer;">All vendors</li>
                     {% for vendor in vendors %}
                     <li onclick="selectVendor('{{ vendor[0] }}', '{{ vendor[0] }}')" style="padding:8px 12px; cursor:pointer;">{{ vendor[0] }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+
+            <div style="position: relative;">
+                <input type="text" id="product-search" placeholder="Search product..." autocomplete="off"
+                    style="width: 180px; flex: none;"
+                    oninput="filterProducts(this.value)">
+                <input type="hidden" name="product" id="product-value" value="{{ request.args.get('product', '') }}">
+                <ul id="product-dropdown" style="display:none; position:absolute; z-index:999; max-height:200px; overflow-y:auto; width:200px; margin:0; padding:0; list-style:none;">
+                    <li onclick="selectProduct('', 'All products')" style="padding:8px 12px; cursor:pointer;">All products</li>
+                    {% for p in product_list %}
+                    <li onclick="selectProduct('{{ p[0] }}', '{{ p[0] }}')" style="padding:8px 12px; cursor:pointer;">{{ p[0] }}</li>
                     {% endfor %}
                 </ul>
             </div>
@@ -305,6 +332,38 @@
 
         dropdown.addEventListener('mouseover', e => { if (e.target.tagName === 'LI') e.target.style.background = 'rgba(255,255,255,0.06)'; });
         dropdown.addEventListener('mouseout',  e => { if (e.target.tagName === 'LI') e.target.style.background = ''; });
+
+        // Product autocomplete
+        const productSearch = document.getElementById('product-search');
+        const productValue  = document.getElementById('product-value');
+        const productDropdown = document.getElementById('product-dropdown');
+
+        const currentProduct = productValue.value;
+        if (currentProduct) productSearch.value = currentProduct;
+
+        productSearch.addEventListener('focus', () => productDropdown.style.display = 'block');
+        document.addEventListener('click', e => {
+            if (!e.target.closest('#product-search') && !e.target.closest('#product-dropdown')) {
+                productDropdown.style.display = 'none';
+            }
+        });
+
+        function filterProducts(query) {
+            productDropdown.style.display = 'block';
+            const items = productDropdown.querySelectorAll('li');
+            items.forEach(li => {
+                li.style.display = li.textContent.toLowerCase().includes(query.toLowerCase()) ? '' : 'none';
+            });
+        }
+
+        function selectProduct(value, label) {
+            productValue.value = value;
+            productSearch.value = label === 'All products' ? '' : label;
+            productDropdown.style.display = 'none';
+        }
+
+        productDropdown.addEventListener('mouseover', e => { if (e.target.tagName === 'LI') e.target.style.background = 'rgba(255,255,255,0.06)'; });
+        productDropdown.addEventListener('mouseout',  e => { if (e.target.tagName === 'LI') e.target.style.background = ''; });
     </script>
 
 </body>

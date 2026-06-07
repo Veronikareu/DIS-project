@@ -35,6 +35,7 @@ CREATE TABLE vendor_product (
 CREATE TABLE favorites (
     id SERIAL PRIMARY KEY,
     cve_id VARCHAR REFERENCES cve(id),
+    user_id INTEGER REFERENCES users(id),
     folder VARCHAR DEFAULT 'Default',
     saved_at TIMESTAMP DEFAULT NOW()
 );

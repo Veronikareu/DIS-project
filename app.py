@@ -77,12 +77,22 @@ def index():
             ORDER BY year DESC;
         """)
         years = cur.fetchall()
- 
+
+    with db.cursor() as cur:
+        cur.execute("""
+            SELECT DISTINCT product
+            FROM vendor_product
+            ORDER BY product ASC
+            LIMIT 300;
+        """)
+        product_list = cur.fetchall()
+
     # search parameters for URL
     q        = request.args.get("q", "").strip()
     vendor   = request.args.get("vendor", "").strip()
     year     = request.args.get("year", "").strip()
     severity = request.args.get("severity", "").strip()
+    product  = request.args.get("product", "").strip()
  
     # Build sql
     sql = """
@@ -122,6 +132,14 @@ def index():
         low, high = SEVERITY_RANGES[severity]
         sql += " AND c.cvss BETWEEN %s AND %s"
         params.extend([low, high])
+
+    # Product-filter
+    if product:
+        sql += """ AND c.id IN (
+            SELECT cve_id FROM products
+            WHERE vulnerable_product ILIKE %s
+        )"""
+        params.append(f"%{product}%")
  
     sql += " ORDER BY c.pub_date DESC NULLS LAST LIMIT 100;"
  
@@ -133,6 +151,7 @@ def index():
         cves=cves,
         vendors=vendors,
         years=years,
+        product_list=product_list,
     )
 
 @app.route("/cve/<cve_id>")
@@ -161,10 +180,16 @@ def cve_detail(cve_id):
         """, (cve_id,))
         products = cur.fetchall()
 
-        cur.execute("SELECT id, folder FROM favorites WHERE cve_id = %s;", (cve_id,))
+        cur.execute(
+            "SELECT id, folder FROM favorites WHERE cve_id = %s AND user_id = %s;",
+            (cve_id, session["user_id"])
+        )
         favorite = cur.fetchone()
 
-        cur.execute("SELECT DISTINCT folder FROM favorites ORDER BY folder;")
+        cur.execute(
+            "SELECT DISTINCT folder FROM favorites WHERE user_id = %s ORDER BY folder;",
+            (session["user_id"],)
+        )
         folders = [row[0] for row in cur.fetchall()]
 
     return render_template("cve_detail.html",
@@ -184,11 +209,15 @@ def profile():
             SELECT f.id, f.cve_id, f.folder, f.saved_at, c.cvss, c.summary
             FROM favorites f
             JOIN cve c ON f.cve_id = c.id
+            WHERE f.user_id = %s
             ORDER BY f.folder, f.saved_at DESC;
-        """)
+        """, (session["user_id"],))
         favorites = cur.fetchall()
  
-        cur.execute("SELECT DISTINCT folder FROM favorites ORDER BY folder;")
+        cur.execute(
+            "SELECT DISTINCT folder FROM favorites WHERE user_id = %s ORDER BY folder;",
+            (session["user_id"],)
+        )
         folders = [row["folder"] for row in cur.fetchall()]
  
     return render_template("profile.html", favorites=favorites, folders=folders)
@@ -208,10 +237,10 @@ def add_favorite(cve_id):
     db = get_db()
     with db.cursor() as cur:
         cur.execute("""
-            INSERT INTO favorites (cve_id, folder)
-            VALUES (%s, %s)
+            INSERT INTO favorites (cve_id, folder, user_id)
+            VALUES (%s, %s, %s)
             ON CONFLICT DO NOTHING;
-        """, (cve_id, folder))
+        """, (cve_id, folder, session["user_id"]))
     db.commit()
     return redirect(request.referrer or "/")
  
@@ -221,7 +250,10 @@ def add_favorite(cve_id):
 def remove_favorite(fav_id):
     db = get_db()
     with db.cursor() as cur:
-        cur.execute("DELETE FROM favorites WHERE id = %s;", (fav_id,))
+        cur.execute(
+            "DELETE FROM favorites WHERE id = %s AND user_id = %s;",
+            (fav_id, session["user_id"])
+        )
     db.commit()
     return redirect(request.referrer or "/profile")
  
@@ -278,3 +310,4 @@ def logout():
 
 if __name__ == "__main__":
     app.run(debug=True)
+    
