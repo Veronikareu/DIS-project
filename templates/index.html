@@ -177,7 +177,6 @@
         .medium   { background: rgba(59,109,17,0.2);   color: #97c459; border: 0.5px solid rgba(59,109,17,0.3); }
         .low      { background: rgba(24,95,165,0.2);   color: #85b7eb; border: 0.5px solid rgba(24,95,165,0.3); }
 
-        /* Vendor dropdown */
         #vendor-dropdown {
             background: #1a1d26;
             border: 0.5px solid rgba(255,255,255,0.12);
@@ -333,7 +332,6 @@
         dropdown.addEventListener('mouseover', e => { if (e.target.tagName === 'LI') e.target.style.background = 'rgba(255,255,255,0.06)'; });
         dropdown.addEventListener('mouseout',  e => { if (e.target.tagName === 'LI') e.target.style.background = ''; });
 
-        // Product autocomplete
         const productSearch = document.getElementById('product-search');
         const productValue  = document.getElementById('product-value');
         const productDropdown = document.getElementById('product-dropdown');
